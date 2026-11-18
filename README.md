@@ -10,7 +10,7 @@ Sitio web en el que estudiantes conversan, por voz o por texto, con diez persona
 | Criticidad | Alta |
 | Cliente y patrocinio | SEP y Universidad de Guadalajara (UdG) |
 | Responsable | @rodrig317-cpu |
-| Suplente | PENDIENTE: ¿quién es el suplente del proyecto? |
+| Suplente | @CoriaAlx |
 | Supervisión y revisión | @ErikV-AG |
 | Producción | https://agentessep-production.up.railway.app |
 | Credenciales | Gestor de contraseñas del área, grupo habla-con-la-historia |
