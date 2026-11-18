@@ -1,6 +1,6 @@
 # 0001. Se usan agentes de D-ID con su widget en el navegador
 
-Estado: propuesto
+Estado: aceptado
 Fecha: 2026-09-24
 Origen: reconstruido desde el historial de git
 
