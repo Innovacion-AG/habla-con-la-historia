@@ -1,1 +1,12 @@
 .DS_Store
+
+# Variables de entorno locales
+.env
+.env.*
+!.env.example
+
+# Insumos del proyecto: viven en la carpeta de Drive del proyecto, no en el repositorio
+/Bio y guías didácticas (DGESUM)/
+/conocimiento/
+/documentos/
+*.zip
