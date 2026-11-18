@@ -44,7 +44,6 @@ El sitio es HTML, CSS y JavaScript sin compilación ni dependencias que instalar
 | `login.html` | Pantalla de código de acceso |
 | `agente-embed.html` | Conversación con un personaje: carga el widget de D-ID según `?key=<personaje>` y admite `?modo=saberes` |
 | `saberes.html` | Reproducción de la página «Retratos Urbanos» del sitio de pruebas de SaberesMX, para probar la integración |
-| `lab.html`, `agente-embed-lab.html` | Laboratorios de pruebas de micrófono; se retirarán en un cambio aparte |
 | `static/images/` | GIF de espera de cada personaje |
 | `Caddyfile` | Configuración del servidor Caddy en Railway |
 
