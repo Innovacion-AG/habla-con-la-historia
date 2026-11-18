@@ -25,7 +25,7 @@ spec:
   type: agente
   lifecycle: experimental
   owner: user:rodrig317-cpu
-  # system: PENDIENTE: ¿el proyecto pertenece a una familia de proyectos del área?
+  system: agentes-conversacionales
   dependsOn:
     - resource:d-id
     - resource:railway
