@@ -1,6 +1,6 @@
 # 0003. Se despliega como sitio estático en Railway con un Caddyfile propio
 
-Estado: propuesto
+Estado: aceptado
 Fecha: 2026-09-24
 Origen: reconstruido desde el historial de git
 
