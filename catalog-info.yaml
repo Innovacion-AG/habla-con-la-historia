@@ -1,0 +1,32 @@
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: habla-con-la-historia
+  title: Habla con la historia
+  description: Estudiantes conversan por voz o texto con personajes históricos de México, integrados en la sección Habla con la historia de SaberesMX.
+  annotations:
+    github.com/project-slug: Innovacion-AG/habla-con-la-historia
+    academiaglobal.mx/canal-slack: proj-habla-con-la-historia
+    academiaglobal.mx/suplente: PENDIENTE
+    academiaglobal.mx/verificado-el: "2026-11-18"
+    academiaglobal.mx/credenciales: "gestor de contraseñas del área, grupo habla-con-la-historia"
+  tags:
+    - agente
+    - d-id
+    - html
+  links:
+    - url: https://agentessep-production.up.railway.app
+      title: Producción
+      type: entorno
+    - url: https://drive.google.com/drive/folders/1p8aLdPXdA-xWgw3TsNhAIo6AiYHb5_g_
+      title: Carpeta de Drive
+      type: ejecutivo
+spec:
+  type: agente
+  lifecycle: experimental
+  owner: user:rodrig317-cpu
+  # system: PENDIENTE: ¿el proyecto pertenece a una familia de proyectos del área?
+  dependsOn:
+    - resource:d-id
+    - resource:railway
+    - resource:saberesmx
