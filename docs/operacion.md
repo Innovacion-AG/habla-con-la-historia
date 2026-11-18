@@ -46,7 +46,7 @@ No se modifican sin consultar al responsable y a supervisión:
 | Rol | Contacto |
 | --- | --- |
 | Responsable | @rodrig317-cpu |
-| Suplente | PENDIENTE |
+| Suplente | @CoriaAlx |
 | Supervisión y revisión | @ErikV-AG |
 | Proveedor de avatares | Soporte de D-ID. PENDIENTE: canal de soporte del plan contratado |
 | Hosting | Soporte de Railway |
