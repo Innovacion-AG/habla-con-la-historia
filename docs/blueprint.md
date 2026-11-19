@@ -21,16 +21,15 @@ flowchart LR
       login[login.html]
       selector[index.html<br/>selector]
       embed[agente-embed.html<br/>conversación]
-      maqueta[saberes.html<br/>maqueta de SaberesMX]
       imagenes[static/images<br/>GIF de espera]
     end
     caddy --> paginas
   end
   login --> selector --> embed
-  maqueta --> embed
   embed -->|"widget agent.d-id.com/v2"| did[(D-ID<br/>10 agentes)]
-  maqueta --> saberesimg[(Sitio de pruebas de SaberesMX<br/>imágenes)]
 ```
+
+Caddy redirige `/saberes`, `/saberes/` y `/saberes.html` a `/` con un 302, porque la maqueta de SaberesMX que se publicaba en esas rutas se retiró.
 
 ## 3. Flujo principal
 
@@ -57,7 +56,7 @@ En SaberesMX, la página del sitio carga `agente-embed.html?key=<personaje>&modo
 | --- | --- | --- | --- | --- |
 | D-ID | Diez agentes conversacionales con avatar, sus instrucciones y bases de conocimiento; widget `agent.d-id.com/v2/index.js` | Cuenta exclusiva del proyecto, separada de la de otros proyectos del área. PENDIENTE: titular | PENDIENTE | Gestor de contraseñas del área, grupo habla-con-la-historia |
 | Railway | Hosting del sitio; despliegue automático desde `main` | PENDIENTE | PENDIENTE | Gestor de contraseñas del área, grupo habla-con-la-historia |
-| SaberesMX | Sitio donde vivirán los personajes; origen de las imágenes de `saberes.html` | PENDIENTE: ¿quién mantiene SaberesMX? | No aplica | No aplica |
+| SaberesMX | Sitio donde vivirán los personajes | PENDIENTE: ¿quién mantiene SaberesMX? | No aplica | No aplica |
 | Google Fonts | Tipografías | No aplica | Gratuito | No aplica |
 
 Los ID de agente y las llaves de cliente de D-ID están en el objeto `AGENTES` de `agente-embed.html`. D-ID diseña esas llaves para usarse en el navegador; su uso se limita por los dominios permitidos de cada agente. PENDIENTE: dominios permitidos configurados en D-ID.
@@ -67,7 +66,6 @@ Los ID de agente y las llaves de cliente de D-ID están en el objeto `AGENTES` d
 | Entorno | Dirección | Despliegue |
 | --- | --- | --- |
 | Producción | https://agentessep-production.up.railway.app | Automático en Railway con cada push a `main` |
-| Maqueta de SaberesMX | https://agentessep-production.up.railway.app/saberes.html | Mismo despliegue de producción |
 | Sitio de pruebas de SaberesMX | PENDIENTE: dirección de la sección Habla con la historia | Lo despliega quien mantiene SaberesMX |
 | Prototipos de interfaz (antecedentes) | https://agentes-historicos-v6a.netlify.app, https://agentes-historicos-v6b.netlify.app, https://agentes-historicos-v8.netlify.app | Netlify, fuera de este repositorio; ver [0004](decisiones/0004-se-adopta-la-interfaz-v8-con-cuatro-grupos-de-personajes.md) |
 
