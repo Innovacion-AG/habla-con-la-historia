@@ -1256,6 +1256,132 @@
             backBtn.addEventListener('click', cerrarSesion);
 
             /* ==============================================================
+               Cierre ordenado pedido por SaberesMX (decisión 0006)
+
+               SaberesMX monta esta página en un iframe mientras la
+               videollamada está abierta y la quita al cerrarla. Los agentes
+               V4 se conectan por LiveKit: quitar el iframe sin más puede
+               dejar la sesión abierta en D-ID, ocupando un lugar del plan.
+               La API del widget no tiene función para colgar y
+               cerrarSesion() solo apaga las pistas; la salida limpia es el
+               botón «Terminar conversación» (aria-label original
+               «End call»), que cierra de forma asíncrona.
+
+               Protocolo:
+                 1. El sitio padre oculta el iframe y envía
+                    { tipo: 'cerrar-sesion' }.
+                 2. Esta página pulsa «Terminar conversación», espera el
+                    evento connection en 'disconnected' (tope de 2.5 s),
+                    llama a cerrarSesion() y responde
+                    { tipo: 'sesion-cerrada' } al origen del padre.
+                    Si la conexión está en 'connecting', espera a
+                    'connected' dentro del mismo tope y entonces pulsa.
+                    Sin conversación activa, responde de inmediato.
+                 3. El padre quita el iframe al recibir la respuesta o a
+                    los 3 s.
+
+               Solo con ?modo=saberes y dentro de un iframe. Si el mensaje
+               no llega, la página funciona igual que siempre.
+            ============================================================== */
+            if (MODO_SABERES && window.parent !== window) {
+                const TOPE_CIERRE_MS     = 2500;
+                const ETIQUETAS_TERMINAR = ['end call', 'terminar conversación'];
+                const ESTADOS_FINALES    = ['disconnected', 'closed', 'fail'];
+                let conexion = '';            // último estado del evento connection
+                const alConectar = [];        // se llaman una vez al llegar a 'connected'
+                const alDesconectar = [];     // se llaman una vez al llegar a un estado final
+                let cierreEnCurso = false;    // un solo cierre: no se pulsa ni se responde dos veces
+
+                /* Mismo evento que usa conectarEventos() del micrófono
+                   manual. Se registra aparte porque aquel solo se activa
+                   con MIC_MANUAL = true. */
+                const t0Conexion = Date.now();
+                const esperaConexion = setInterval(() => {
+                    const api = [window.DID_AGENTS_API, window['did-agent']]
+                        .find(a => a && a.events && typeof a.events.on === 'function');
+                    if (api) {
+                        clearInterval(esperaConexion);
+                        api.events.on('connection', ev => {
+                            conexion = String((ev && ev.state) || '').toLowerCase();
+                            if (conexion === 'connected') {
+                                alConectar.splice(0).forEach(fn => fn());
+                            }
+                            if (ESTADOS_FINALES.includes(conexion)) {
+                                alDesconectar.splice(0).forEach(fn => fn());
+                            }
+                        });
+                    } else if (Date.now() - t0Conexion > 30000) {
+                        clearInterval(esperaConexion);
+                        console.warn('[agente-embed] API de D-ID no disponible: el cierre ordenado responderá sin esperar');
+                    }
+                }, 200);
+
+                function buscarBotonTerminar() {
+                    for (const r of recolectarRaices(document.body)) {
+                        const els = r.querySelectorAll ? r.querySelectorAll('button, [role="button"]') : [];
+                        for (const el of els) {
+                            const aria = normalizar((el.getAttribute && el.getAttribute('aria-label')) || '');
+                            if (ETIQUETAS_TERMINAR.includes(aria)) return el;
+                        }
+                    }
+                    return null;
+                }
+
+                function cerrarOrdenado() {
+                    return new Promise(listo => {
+                        let tope = 0, hecho = false;
+                        function terminar(motivo) {
+                            if (hecho) return;
+                            hecho = true;
+                            clearTimeout(tope);
+                            console.log('[agente-embed] cierre ordenado:', motivo);
+                            try { cerrarSesion(); } catch (e) {}
+                            listo();
+                        }
+                        // El botón puede aparecer un instante después de 'connected':
+                        // se busca cada 100 ms hasta pulsarlo o hasta el tope.
+                        let avisado = false;
+                        function pulsarTerminar() {
+                            if (hecho) return;
+                            const boton = buscarBotonTerminar();
+                            if (boton) {
+                                try { boton.click(); } catch (e) {}
+                                return;
+                            }
+                            if (!avisado) {
+                                avisado = true;
+                                console.warn('[agente-embed] aún no aparece «Terminar conversación»; se busca hasta el tope');
+                            }
+                            setTimeout(pulsarTerminar, 100);
+                        }
+                        if (!['connecting', 'connected', 'disconnecting'].includes(conexion)) {
+                            terminar('sin conversación activa');
+                            return;
+                        }
+                        alDesconectar.push(() => terminar('conexión ' + conexion));
+                        tope = setTimeout(() => terminar('tope de ' + TOPE_CIERRE_MS + ' ms'), TOPE_CIERRE_MS);
+                        // 'connecting': se espera a 'connected' dentro del mismo tope.
+                        // 'disconnecting': ya va de salida; solo se espera el final.
+                        if (conexion === 'connected') pulsarTerminar();
+                        else if (conexion === 'connecting') alConectar.push(pulsarTerminar);
+                    });
+                }
+
+                window.addEventListener('message', ev => {
+                    if (ev.source !== window.parent) return;
+                    const datos = ev.data;
+                    if (!datos || typeof datos !== 'object' || datos.tipo !== 'cerrar-sesion') return;
+                    if (cierreEnCurso) return;
+                    cierreEnCurso = true;
+                    const origen = ev.origin;
+                    cerrarOrdenado().then(() => {
+                        try { window.parent.postMessage({ tipo: 'sesion-cerrada' }, origen); }
+                        catch (e) { console.warn('[agente-embed] no se pudo responder al sitio padre', e); }
+                    });
+                });
+            }
+
+            /* ==============================================================
                Inyectar el script de D-ID
             ============================================================== */
             const script = document.createElement('script');

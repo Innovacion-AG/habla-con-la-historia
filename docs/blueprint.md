@@ -48,7 +48,29 @@ sequenceDiagram
   DID-->>Estudiante: Respuesta del personaje en voz, video y transcripción
 ```
 
-En SaberesMX, la página del sitio carga `agente-embed.html?key=<personaje>&modo=saberes` dentro de un iframe. En ese modo no se pide código de acceso, se oculta el botón «Volver» y se usa la paleta de SaberesMX.
+En SaberesMX, la página del sitio carga `agente-embed.html?key=<personaje>&modo=saberes` dentro de un iframe mientras la videollamada está abierta. En ese modo no se pide código de acceso, se oculta el botón «Volver» y se usa la paleta de SaberesMX.
+
+El contrato de `?modo=saberes` incluye un protocolo de cierre ordenado ([0006](decisiones/0006-se-cierra-la-sesion-de-d-id-por-mensaje-antes-de-quitar-el-iframe.md), en estado propuesto). Sirve para que la sesión de D-ID no quede abierta cuando SaberesMX quita el iframe:
+
+```mermaid
+sequenceDiagram
+  participant Padre as Página de SaberesMX
+  participant Embed as agente-embed.html (iframe)
+  participant DID as Widget de D-ID
+  Padre->>Padre: Oculta el iframe
+  Padre->>Embed: postMessage {tipo: 'cerrar-sesion'}
+  alt Conversación activa o conectándose
+    Embed->>DID: Pulsa «Terminar conversación» (aria-label «End call»)
+    DID-->>Embed: Evento connection en 'disconnected' (tope de 2.5 s)
+  end
+  Embed->>Embed: cerrarSesion()
+  Embed-->>Padre: postMessage {tipo: 'sesion-cerrada'} al origen del padre
+  Padre->>Padre: Quita el iframe (o a los 3 s si no hay respuesta)
+```
+
+- El embed solo atiende el mensaje con `?modo=saberes`, dentro de un iframe y si el mensaje viene de `window.parent`. Responde con `postMessage` al origen del mensaje, nunca a `'*'`.
+- Si la conexión está en curso (`'connecting'`), espera a `'connected'` dentro del mismo tope y pulsa el botón. Sin conversación activa, responde de inmediato. Si llegan varios pedidos, cierra y responde una sola vez.
+- Si el sitio padre no envía el mensaje, la página funciona como antes.
 
 ## 4. Dependencias externas
 
