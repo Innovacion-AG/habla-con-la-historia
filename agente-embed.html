@@ -1148,27 +1148,74 @@
                "Iniciar conversación" en la misma página (la persona ya dio
                el gesto, así que el audio no se bloquea). Máximo REINTENTOS
                veces; después se deja el aviso para que la persona decida.
+
+               Dos condiciones evitan que el reintento inicie conversaciones
+               por su cuenta:
+               - El aviso y los botones se buscan solo dentro del contenedor
+                 del widget y sus shadow roots, sin el texto de <style> ni
+                 <script>. Antes se buscaba en document.body, cuyo texto
+                 incluye este mismo script con las frases del diccionario:
+                 cada carga parecía un aviso y se pulsaba "Iniciar
+                 conversación" sin que la persona lo hiciera.
+               - Solo se reintenta si en esta página ya hubo un intento de
+                 conexión iniciado por la persona (evento connection en
+                 'connecting' o 'connected').
             ============================================================== */
             const REINTENTOS = 2;
             let reintentosHechos = 0;
             let reintentando = false;
+            let huboIntento = false;
             const PATRONES_NO_DISPONIBLE = [
                 'agent is unavailable',
                 'agent is temporarily unavailable',
                 'personaje no está disponible',
             ];
 
-            function hayAvisoNoDisponible() {
-                for (const r of recolectarRaices(document.body)) {
-                    if (r === loader || r === errorEl || r === backBtn) continue;
-                    const txt = normalizar(r.textContent || '');
-                    if (PATRONES_NO_DISPONIBLE.some(p => txt.includes(p))) return true;
+            const t0Intento = Date.now();
+            const esperaIntento = setInterval(() => {
+                const api = [window.DID_AGENTS_API, window['did-agent']]
+                    .find(a => a && a.events && typeof a.events.on === 'function');
+                if (api) {
+                    clearInterval(esperaIntento);
+                    api.events.on('connection', ev => {
+                        const s = String((ev && ev.state) || '').toLowerCase();
+                        if (s === 'connecting' || s === 'connected') huboIntento = true;
+                    });
+                } else if (Date.now() - t0Intento > 30000) {
+                    clearInterval(esperaIntento);
+                    console.warn('[agente-embed] API de D-ID no disponible: sin reintento automático');
                 }
-                return false;
+            }, 200);
+
+            // D-ID monta su shadow root en el propio contenedor, y
+            // recolectarRaices() solo recorre los de sus descendientes.
+            function raicesDelWidget() {
+                const raices = recolectarRaices(container);
+                if (container.shadowRoot) recolectarRaices(container.shadowRoot, raices);
+                return raices;
+            }
+
+            function textoDelWidget() {
+                const partes = [];
+                for (const r of raicesDelWidget()) {
+                    const walker = document.createTreeWalker(r, NodeFilter.SHOW_TEXT);
+                    let n;
+                    while ((n = walker.nextNode())) {
+                        const padre = n.parentNode ? n.parentNode.nodeName : '';
+                        if (padre === 'STYLE' || padre === 'SCRIPT') continue;
+                        partes.push(n.nodeValue);
+                    }
+                }
+                return normalizar(partes.join(' '));
+            }
+
+            function hayAvisoNoDisponible() {
+                const txt = textoDelWidget();
+                return PATRONES_NO_DISPONIBLE.some(p => txt.includes(p));
             }
 
             function buscarBotonInicio() {
-                for (const r of recolectarRaices(document.body)) {
+                for (const r of raicesDelWidget()) {
                     const els = r.querySelectorAll ? r.querySelectorAll('button, [role="button"], a') : [];
                     for (const el of els) {
                         const txt  = normalizar(el.textContent || '');
@@ -1181,7 +1228,7 @@
 
             function buscarBotonCerrarAviso() {
                 const textos = ['entendido', 'understood', 'cerrar', 'close', 'intentar de nuevo', 'try again', 'reconectar', 'reconnect'];
-                for (const r of recolectarRaices(document.body)) {
+                for (const r of raicesDelWidget()) {
                     const els = r.querySelectorAll ? r.querySelectorAll('button, [role="button"]') : [];
                     for (const el of els) {
                         const txt  = normalizar(el.textContent || '');
@@ -1218,7 +1265,7 @@
             }
 
             const vigilanciaDisponible = setInterval(() => {
-                if (!reintentando && hayAvisoNoDisponible()) reintentar();
+                if (!reintentando && huboIntento && hayAvisoNoDisponible()) reintentar();
             }, 1000);
 
             /* ==============================================================
